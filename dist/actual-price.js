@@ -1,7 +1,6 @@
 "use strict";
-const validate = require("validate-vat");
 module.exports = function (RED) {
-    class vat_lookup {
+    class actual_price {
         constructor(config) {
             this.config = config;
             this.node = null;
@@ -10,9 +9,6 @@ module.exports = function (RED) {
             this.node = this;
             this.node.status({});
             this.node.on("input", this.oninput);
-        }
-        isNumeric(num) {
-            return !isNaN(num);
         }
         static EvaluateNodeProperty(node, msg, name, ignoreerrors = false) {
             return new Promise((resolve, reject) => {
@@ -36,22 +32,23 @@ module.exports = function (RED) {
         async oninput(msg) {
             try {
                 this.node.status({});
-                const countrycode = (await vat_lookup.EvaluateNodeProperty(this, msg, "countrycode")) || "";
-                const vatnumber = (await vat_lookup.EvaluateNodeProperty(this, msg, "vatnumber")) || "";
-                this.node.status({ fill: "blue", shape: "dot", text: "Validating" });
-                validate(countrycode, vatnumber.toString(), (error, validationInfo) => {
-                    if (error) {
-                        return this.HandleError(this, error, msg);
-                    }
-                    if (validationInfo && validationInfo.name && validationInfo.name != "") {
-                        this.node.status({ fill: "green", shape: "dot", text: validationInfo.name });
+                const day_multiplier = (await actual_price.EvaluateNodeProperty(this, msg, "day_multiplier")) || 1;
+                const night_hours = (await actual_price.EvaluateNodeProperty(this, msg, "night_hours")) || [];
+                const night_multiplier = (await actual_price.EvaluateNodeProperty(this, msg, "night_multiplier")) || 1;
+                const end_multiplier = (await actual_price.EvaluateNodeProperty(this, msg, "end_multiplier")) || 1;
+                for (let item of msg.payload) {
+                    let hour = new Date(item.timestamp).getHours();
+                    if (night_hours.includes(hour)) {
+                        item.price *= night_multiplier;
                     }
                     else {
-                        this.node.status({});
+                        item.price *= day_multiplier;
                     }
-                    msg.payload = validationInfo;
-                    this.node.send(msg);
-                });
+                    item.price *= end_multiplier;
+                    console.log(hour + ": " + item.price + " (" + item.timestamp + ")");
+                }
+                // msg.payload = "hello";
+                this.node.send(msg);
             }
             catch (error) {
                 this.HandleError(this, error, msg);
@@ -80,6 +77,6 @@ module.exports = function (RED) {
             }
         }
     }
-    RED.nodes.registerType("vat lookup", vat_lookup);
+    RED.nodes.registerType("actual price", actual_price);
 };
-//# sourceMappingURL=vat.js.map
+//# sourceMappingURL=actual-price.js.map

@@ -5,11 +5,13 @@
   "main": "dist/vat.js",
   "dependencies": {
     "@types/node": "^13.9.1",
-    "@types/node-red": "^0.20.1",
-    "validate-vat": "^0.9.0"
+    "@types/node-red": "^0.20.1"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1"
   },
   "scripts": {
-    "init": "if not exist data mkdir data && cd data && npm init -y && npm i ..",
+    "build": "tsc && copyfiles *.html dist/",
     "debug": "node-red --userDir ./data"
   },
   "repository": {
@@ -27,7 +29,7 @@
   "homepage": "https://github.com/open-rpa/node-red-contrib-vat-lookup#readme",
   "node-red": {
     "nodes": {
-      "vat-lookup": "dist/vat.js"
+      "actual-price": "dist/actual-price.js"
     }
   }
 }
